@@ -29,34 +29,36 @@ ORDER BY
 
 ----------
 WITH sum_per_month AS(
-SELECT
-    od.productid
-    ,EXTRACT(year FROM o.orderdate) as year 
-    ,EXTRACT(month FROM o.orderdate) as month
-    ,SUM(od.quantity) as total
+        SELECT
+            od.productid
+            ,EXTRACT(year FROM o.orderdate) as year 
+            ,EXTRACT(month FROM o.orderdate) as month
+            ,SUM(od.quantity) as total
 
-FROM 
-    orders as o
-JOIN 
-    orderdetails as od
-ON o.orderid = od.orderid
+        FROM 
+            orders as o
+        JOIN 
+            orderdetails as od
+        ON o.orderid = od.orderid
 
-GROUP BY
-    1,2,3
+        GROUP BY
+            1,2,3
 
-ORDER BY
-    1,2,3)
-
-SELECT 
-    *
-    ,total - previous_month
-
-FROM(
+        ORDER BY
+            1,2,3)
 
 SELECT 
     *
-    ,coalesce(lag(total,1) OVER()) as previous_month
+    ,CASE total - previous_month
+    WHEN NULL THEN '0'
+    ELSE total - previous_month
+    END AS difference
 
-FROM sum_per_month
+FROM
+    (SELECT 
+        *
+        ,coalesce(lag(total,1) OVER(PARTITION BY productid)) as previous_month
 
-ORDER BY 1,2,3,4) as last_month_total
+    FROM sum_per_month
+
+    ORDER BY 1,2,3,4) as last_month_total
