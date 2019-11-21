@@ -12,3 +12,43 @@
 
 -- BIG HINT: Look at the expected results, how do you convert the dates to the 
 -- correct format (year and month)?
+
+-- sum of overall product sold by each productid for comparison
+SELECT
+    od.productid
+    ,SUM(od.quantity)
+
+FROM 
+    orderdetails AS od
+
+GROUP BY
+    1
+ORDER BY
+    2 DESC
+
+
+----------
+WITH sum_per_month AS(
+SELECT
+    od.productid
+    ,EXTRACT(year FROM o.orderdate) as year 
+    ,EXTRACT(month FROM o.orderdate) as month
+    ,SUM(od.quantity) as total
+
+FROM 
+    orders as o
+JOIN 
+    orderdetails as od
+ON o.orderid = od.orderid
+
+GROUP BY
+    1,2,3
+
+ORDER BY
+    1,2,3)
+
+SELECT 
+    *
+    ,lead(total,1) OVER (ORDER BY year)
+
+FROM sum_per_month
