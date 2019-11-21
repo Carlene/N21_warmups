@@ -49,6 +49,14 @@ ORDER BY
 
 SELECT 
     *
-    ,lead(total,1) OVER (ORDER BY year)
+    ,total - previous_month
+
+FROM(
+
+SELECT 
+    *
+    ,coalesce(lag(total,1) OVER()) as previous_month
 
 FROM sum_per_month
+
+ORDER BY 1,2,3,4) as last_month_total
