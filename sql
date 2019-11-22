@@ -70,42 +70,36 @@ FROM
 
 WITH gm as(
     SELECT 
-        generate_series(min(o.orderdate)::date
+        od.productid as productid
+        ,generate_series(min(o.orderdate)::date
                         ,max(o.orderdate)::date
-                        ,interval '1 day') as gs
-    FROM  
-        orders as o)
+                        ,interval '1 month') as gs
+        ,SUM(od.quantity) as total
 
+    FROM  
+        orders as o
+    JOIN 
+        orderdetails as od
+    ON o.orderid = od.orderid
+
+    GROUP BY
+        1, od.quantity
+
+    ORDER BY
+        1,2
+    )
 
 SELECT
-    od.productid
-    ,SUM(od.quantity) as total
-
-FROM 
-    orders as o
-JOIN 
-    orderdetails as od
-ON o.orderid = od.orderid
-
-GROUP BY
-    1,2,3
-
-ORDER BY
-    1,2,3
-
-
-SELECT 
-    *
-    ,CASE total - previous_month
-    WHEN NULL THEN '0'
-    ELSE total - previous_month
-    END AS difference
+    gm.productid
+    ,EXTRACT(year FROM gm.gs) as year 
+    ,EXTRACT(month FROM gm.gs) as month
+    ,gm.total
 
 FROM
-    (SELECT 
-        *
-        ,coalesce(lag(total,1) OVER(PARTITION BY productid)) as previous_month
+    gm
 
-    FROM sum_per_month
+GROUP BY
+    1, 2, 3, 4
 
-    ORDER BY 1,2,3,4) as last_month_total
+ORDER BY 
+    1, 2, 3
