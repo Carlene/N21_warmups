@@ -27,8 +27,8 @@ ORDER BY
     2 DESC
 
 
-----------
-WITH sum_per_month AS(
+---------- Difference in sold quantity each month per product
+WITH sum_per_id AS(
         SELECT
             od.productid
             ,EXTRACT(year FROM o.orderdate) as year 
@@ -46,6 +46,53 @@ WITH sum_per_month AS(
 
         ORDER BY
             1,2,3)
+
+SELECT 
+    *
+    ,coalesce(total - previous_month, 0)
+FROM
+    (SELECT 
+        *
+        ,lag(total,1) OVER(PARTITION BY productid) as previous_month
+
+    FROM sum_per_id
+
+    ORDER BY 1,2,3,4) as last_month_total
+
+---- Filling in missing months
+
+-- SELECT * 
+-- FROM generate_series(1,12) as months
+-- JOIN(
+-- SELECT * 
+-- FROM generate_series(2014,2016) as years) AS months_years
+
+
+WITH gm as(
+    SELECT 
+        generate_series(min(o.orderdate)::date
+                        ,max(o.orderdate)::date
+                        ,interval '1 day') as gs
+    FROM  
+        orders as o)
+
+
+SELECT
+    od.productid
+    ,SUM(od.quantity) as total
+
+FROM 
+    orders as o
+JOIN 
+    orderdetails as od
+ON o.orderid = od.orderid
+
+GROUP BY
+    1,2,3
+
+ORDER BY
+    1,2,3
+
 
 SELECT 
     *
